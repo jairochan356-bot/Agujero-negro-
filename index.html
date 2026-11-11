@@ -1,0 +1,210 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulación de Agujero Negro</title>
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: #02020a;
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+    color: white;
+}
+
+canvas {
+    display: block;
+}
+
+.info {
+    position: absolute;
+    top: 25px;
+    width: 100%;
+    text-align: center;
+    pointer-events: none;
+}
+
+h1 {
+    font-size: 25px;
+    color: #ffffff;
+    text-shadow: 0 0 15px #8c42ff;
+}
+
+p {
+    color: #aaa;
+    margin-top: 8px;
+    font-size: 13px;
+}
+
+.controls {
+    position: absolute;
+    bottom: 25px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+button {
+    padding: 12px 22px;
+    background: #35145c;
+    border: 1px solid #a66aff;
+    border-radius: 25px;
+    color: white;
+    cursor: pointer;
+}
+</style>
+</head>
+
+<body>
+
+<div class="info">
+    <h1>AGUJERO NEGRO</h1>
+    <p>Simulación espacial en rotación</p>
+</div>
+
+<canvas id="space"></canvas>
+
+<div class="controls">
+    <button onclick="toggleRotation()" id="btn">
+        Pausar rotación
+    </button>
+</div>
+
+<script>
+const canvas = document.getElementById("space");
+const ctx = canvas.getContext("2d");
+
+let w, h;
+let angle = 0;
+let rotating = true;
+
+function resize() {
+    w = canvas.width = innerWidth;
+    h = canvas.height = innerHeight;
+}
+resize();
+window.addEventListener("resize", resize);
+
+// Crear estrellas
+const stars = Array.from({length: 250}, () => ({
+    x: Math.random(),
+    y: Math.random(),
+    r: Math.random() * 1.5,
+    a: Math.random()
+}));
+
+function drawStars() {
+    stars.forEach(s => {
+        ctx.globalAlpha = 0.3 + Math.random() * 0.7;
+        ctx.fillStyle = "white";
+        ctx.beginPath();
+        ctx.arc(s.x*w, s.y*h, s.r, 0, Math.PI*2);
+        ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+}
+
+function drawBlackHole() {
+    const cx = w / 2;
+    const cy = h / 2;
+    const radius = Math.min(w,h) * 0.13;
+
+    ctx.save();
+    ctx.translate(cx, cy);
+
+    // Brillo exterior
+    let glow = ctx.createRadialGradient(
+        0,0,radius*0.8,
+        0,0,radius*2.7
+    );
+    glow.addColorStop(0, "rgba(0,0,0,0)");
+    glow.addColorStop(0.5, "rgba(130,40,255,0.15)");
+    glow.addColorStop(1, "rgba(0,0,0,0)");
+
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(0,0,radius*2.7,0,Math.PI*2);
+    ctx.fill();
+
+    // Disco de acreción
+    for(let i=0; i<100; i++) {
+        let t = i/100;
+        let r = radius * (1.2 + t*1.5);
+        let a = angle * (1.5 - t) + i*0.18;
+
+        let x = Math.cos(a)*r;
+        let y = Math.sin(a)*r*0.35;
+
+        ctx.beginPath();
+        ctx.ellipse(
+            x,y,
+            radius*(0.12+t*0.08),
+            radius*(0.025+t*0.025),
+            a,0,Math.PI*2
+        );
+
+        let hue = 270 - t*100;
+        ctx.fillStyle = `hsla(${hue},100%,${60-t*15}%,0.75)`;
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = `hsl(${hue},100%,60%)`;
+        ctx.fill();
+    }
+
+    // Anillo luminoso
+    ctx.beginPath();
+    ctx.ellipse(0,0,radius*1.6,radius*0.48,0,0,Math.PI*2);
+    ctx.strokeStyle = "#ff9b42";
+    ctx.lineWidth = 5;
+    ctx.shadowBlur = 25;
+    ctx.shadowColor = "#ff6600";
+    ctx.stroke();
+
+    // Sombra del agujero negro
+    ctx.shadowBlur = 30;
+    ctx.shadowColor = "#000";
+    ctx.fillStyle = "#000";
+    ctx.beginPath();
+    ctx.arc(0,0,radius,0,Math.PI*2);
+    ctx.fill();
+
+    // Borde brillante
+    ctx.shadowBlur = 20;
+    ctx.strokeStyle = "#d8a4ff";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0,0,radius,0,Math.PI*2);
+    ctx.stroke();
+
+    ctx.restore();
+}
+
+function animate() {
+    ctx.fillStyle = "#02020a";
+    ctx.fillRect(0,0,w,h);
+
+    drawStars();
+    drawBlackHole();
+
+    if(rotating) angle += 0.012;
+
+    requestAnimationFrame(animate);
+}
+
+function toggleRotation() {
+    rotating = !rotating;
+    document.getElementById("btn").textContent =
+        rotating ? "Pausar rotación" : "Reanudar rotación";
+}
+
+animate();
+</script>
+
+</body>
+</html>
